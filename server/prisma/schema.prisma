@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  // 🔗 Relationships
+  teams     TeamMember[]
+  assignedTasks Task[]   @relation("AssignedTasks")
+  createdTasks  Task[]   @relation("CreatedTasks")
+}
+
+model Team {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+
+  // 🔗 Relationships
+  members   TeamMember[]
+  tasks     Task[]
+}
+
+model TeamMember {
+  id      Int @id @default(autoincrement())
+
+  userId  Int
+  teamId  Int
+
+  // 🔗 Relations
+  user    User @relation(fields: [userId], references: [id])
+  team    Team @relation(fields: [teamId], references: [id])
+
+  @@unique([userId, teamId]) // prevent duplicate membership
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+
+  status   TaskStatus   @default(TODO)
+  priority TaskPriority @default(MEDIUM)
+
+  createdAt DateTime @default(now())
+
+  // 🔗 Foreign Keys
+  teamId     Int
+  assignedTo Int
+  createdBy  Int
+
+  // 🔗 Relations
+  team       Team @relation(fields: [teamId], references: [id])
+
+  assignee   User @relation("AssignedTasks", fields: [assignedTo], references: [id])
+  creator    User @relation("CreatedTasks", fields: [createdBy], references: [id])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
